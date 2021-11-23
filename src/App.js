@@ -1,23 +1,29 @@
-import logo from './logo.svg';
-import './App.css';
+import React, { useState } from 'react';
+import Navbar from './Navbar';
+import Posts from './Posts';
+import './App.scss';
 
-function App() {
+const App = () => {
+  const [option, setOption] = useState("Posts");
+
+  const updateComponent = (component) => {
+    setOption(component);
+  }
+
+  const mainComponent = () => {
+    switch(option){
+      case "Posts":
+        return <Posts />;
+      case "Pictures":
+        return <div>pictures</div>;
+      default:
+        return <div className="error">error in loading</div>;
+    }
+  }
   return (
     <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
+      <Navbar updateComponent={updateComponent}/>
+      {mainComponent()}
     </div>
   );
 }
