@@ -1,5 +1,5 @@
 ---
-title: Second Post!
+title: why it isn't ok to dance
 author: John
 date: 22 November 2021
 ---

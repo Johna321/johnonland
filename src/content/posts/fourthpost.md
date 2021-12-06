@@ -1,6 +1,6 @@
 ---
-title: fourth post
-author: john
+title: my pal the tortoise
+author: john aitken
 date: 23 nov
 ---
 

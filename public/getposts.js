@@ -1,7 +1,7 @@
 const path = require("path");
 const fs = require("fs");
 
-const dir_path = path.join(__dirname, "../content/posts");
+const dir_path = path.join(__dirname, "../src/content/posts");
 
 const getPosts = () => {
   let post_list = [];
@@ -46,7 +46,7 @@ const getPosts = () => {
         post_list.push(post);
         if (i === files.length - 1) {
           let data = JSON.stringify(post_list);
-          fs.writeFileSync("content/posts.json", data);
+          fs.writeFileSync("./src/content/posts.json", data);
         }
       })
     })

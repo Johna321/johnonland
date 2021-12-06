@@ -1,6 +1,6 @@
 ---
-title: First Post!
-author: John
+title: on making a blog website
+author: John aitken
 date: 22 November 2021
 ---
 

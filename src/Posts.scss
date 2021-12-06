@@ -3,4 +3,19 @@
 .Posts{
   display: flex;
   flex-flow: row nowrap;
+  flex: 5;
+}
+
+.post-listing {
+  margin: 25px;
+  padding: 5px;
+  background-color: #f5f5dc;
+  height: 200px;
+  border: 1px solid black;
+  display: flex;
+  flex-flow: row wrap;
+}
+
+.main-container {
+  margin: 15px;
 }
