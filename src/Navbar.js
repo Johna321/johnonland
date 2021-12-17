@@ -28,7 +28,10 @@ const Navbar = ({ updateComponent }) => {
 
   return(
     <div className="Navbar">
-      <div className="title">
+      <div
+        className="title"
+        onClick={() => updateComponent("Posts")}
+      >
         <b>john on land</b>
         <div className="subtitle">
           {/*<i>{subtitles[Math.floor(Math.random() * subtitles.length)]}</i>*/}
@@ -43,7 +46,7 @@ const Navbar = ({ updateComponent }) => {
         <button 
           className="nav-button"
           onClick={() => updateComponent("Pictures")}
-        >pictures</button>
+          >pictures</button>
       </div> 
     </div>
   );

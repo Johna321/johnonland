@@ -1,31 +1,18 @@
----
-title: on making a blog website
-author: John aitken
-date: 22 November 2021
----
+import React from 'react';
+import './Post.scss';
+import post_list from './content/posts.json';
+import ReactMarkdown from 'react-markdown';
+import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
+import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 
-this is a test post
-
-check it out
-
-```java
-public static void main(String[] args){
-  System.out.println("heres some java code");
-}
-```
-
-# heres the code that made this
-## now how does this look
-ew so i need to fix it so that all headers have the same
-color
-
-```js
 const Post = ({ index }) => {
   const { title, author, date, content } = post_list[index];
   return (
     <div className="post">
-      <h1 className="post-title">{title}</h1>
-      <h4 className="post-title">{author} on {date}</h4>
+      <div className="post-title">
+        <h1>{title}</h1>
+        <h4>{author} on {date}</h4>
+      </div>
       <div className="content-container">
         <ReactMarkdown 
           children={content}
@@ -35,6 +22,13 @@ const Post = ({ index }) => {
                 <p className="article-body">
                   {children}
                 </p>
+              )
+            },
+            h1: ({ node, children }) => {
+              return (
+                <h1 className="article-header">
+                  {children}
+                </h1>
               )
             },
             code({ className, children }) {
@@ -53,5 +47,5 @@ const Post = ({ index }) => {
     </div>
   );
 }
-```
 
+export default Post;

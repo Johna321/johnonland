@@ -2,9 +2,9 @@ import React from 'react';
 //import SideExplorer from './SideExplorer';
 import './Posts.scss';
 import post_list from './content/posts.json';
-//import Markdown from 'react-markdown';
+import banner from './content/johnonland.jpg';
 
-const Posts = () => {
+const Posts = ({ updateComponent, setIndex }) => {
   const loadPosts = () => {
     /*const posts = post_list.map((post, index) => {
       return(
@@ -21,7 +21,17 @@ const Posts = () => {
     });*/
     const posts = post_list.map((post, index) => {
       return (
-        <li key={index}><a href="#">{post.title}</a></li>
+        <li key={index}>
+          <button 
+            className="post-button"
+            onClick={() => {
+              setIndex(index);
+              updateComponent("Post");
+            }}
+          >
+            {post.title}
+          </button>
+        </li>
       );
     })
     return <ul>{posts}</ul>;
@@ -31,10 +41,11 @@ const Posts = () => {
       <div className="main-container">
         <div className="introduction">
           welcome to the <b>john on land</b> blog <br />
-          a blog dedicated to remaining on land, no matter the cost
+          a blog dedicated to remaining on land, no matter the cost 
         </div>
         <div>{loadPosts()}</div>
       </div>
+      <img className="banner-image" src={banner} alt="john on land"/>
     </div>
   );
 }
