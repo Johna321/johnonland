@@ -39,13 +39,18 @@ const Posts = ({ updateComponent, setIndex }) => {
   return(
     <div className="Posts">
       <div className="main-container">
-        <div className="introduction">
-          welcome to the <b>john on land</b> blog <br />
-          a blog dedicated to remaining on land, no matter the cost 
+        <div>
+          <div className="introduction">
+            welcome to the <b>john on land</b> blog <br />
+            a blog dedicated to remaining on land, no matter the cost 
+          </div>
+          <div>{loadPosts()}</div>
         </div>
-        <div>{loadPosts()}</div>
+        <div>
+          <img className="banner-image" src={banner} alt="john on land"/>
+          <i>(john, on land)</i>
+        </div>
       </div>
-      <img className="banner-image" src={banner} alt="john on land"/>
     </div>
   );
 }
