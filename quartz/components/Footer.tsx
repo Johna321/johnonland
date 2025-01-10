@@ -5,14 +5,17 @@ import { i18n } from "../i18n"
 
 interface Options {
   links: Record<string, string>
+  display: Boolean
 }
 
 export default ((opts?: Options) => {
   const Footer: QuartzComponent = ({ displayClass, cfg }: QuartzComponentProps) => {
     const year = new Date().getFullYear()
     const links = opts?.links ?? []
+    const display = opts?.display
     return (
       <footer class={`${displayClass ?? ""}`}>
+        {display ? <>
         <p>
           {i18n(cfg.locale).components.footer.createdWith}{" "}
           <a href="https://quartz.jzhao.xyz/">Quartz v{version}</a> © {year}
@@ -23,7 +26,8 @@ export default ((opts?: Options) => {
               <a href={link}>{text}</a>
             </li>
           ))}
-        </ul>
+        </ul></>
+        : <></>}
       </footer>
     )
   }

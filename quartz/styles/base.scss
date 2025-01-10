@@ -147,6 +147,11 @@ a {
     p > strong {
       color: var(--dark);
     }
+    
+    // custom article body font
+    & > p {
+      font-size: 1.3rem;
+    }
   }
 
   & > #quartz-body {
