@@ -8,8 +8,11 @@ export const sharedPageComponents: SharedLayout = {
     Component.PageTitle(),
     // Component.Search(),
     Component.Darkmode(),
+    Component.DesktopOnly(Component.RandomDiagram())
   ],
-  afterBody: [],
+  afterBody: [
+    
+  ],
   footer: Component.Footer({
     links: {
       GitHub: "https://github.com/Johna321",
