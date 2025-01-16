@@ -5,13 +5,14 @@ import { classNames } from "../util/lang";
 
 const RandomDiagram: QuartzComponent = ({ displayClass }: QuartzComponentProps) => {
     return (
-        <div class={classNames(displayClass)}>
+        <div class={classNames(displayClass)} style="margin-left:auto">
             <img 
                 id="random_diagram" 
-                src="https://johnon.land/randomdiagrams/cube_light.svg" 
+                src='https://johnon.land/randomdiagrams/cube_light.svg'
                 alt="cube"
+                height="75px"
                 width="75px"
-                height="100%"
+                style="margin-top: 0; margin-bottom: 0"
             /> 
         </div>
     )

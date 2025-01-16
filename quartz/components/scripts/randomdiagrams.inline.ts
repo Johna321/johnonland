@@ -2,7 +2,15 @@
 
 document.addEventListener("nav", () => {
     const diagram = document.getElementById('random_diagram');
-    const isDarkTheme = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    const isDarkTheme = (localStorage.getItem('theme') == 'dark');
+
+    const figures = ['cube', 'animal', 'pyramid', 'cup']
+    const choice = figures[Math.floor(Math.random() * figures.length)]
+    const src = 'https://johnon.land/randomdiagrams/' + choice + ".svg"
+
+    diagram.src = src;
+
+    console.log("CHANGED SRC TO ", src)
 
     if (isDarkTheme) {
         diagram.style.filter = 'invert(100%)';
