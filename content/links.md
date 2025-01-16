@@ -2,6 +2,16 @@
 title: Links
 hide_metadata: true
 ---
-Websites, books, movies I like:
+[heythisischris.com](https://heythisischris.com)
+
+[dataswamp.org/~john/](https://dataswamp.org/~john/)
 
 [gwern.net](https://gwern.net)
+
+[turntrout.com](https://turntrout.com)
+
+[monoskop.org](https://monoskop.org/Monoskop)
+
+[cat-v.org](https://cat-v.org/)
+
+... and many more

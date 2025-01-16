@@ -2,4 +2,4 @@
 title: Notes
 hide_metadata: true
 ---
-Notes put here.
+Notes from class or self-study. To be populated.
