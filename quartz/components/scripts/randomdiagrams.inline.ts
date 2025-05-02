@@ -4,7 +4,7 @@ document.addEventListener("nav", () => {
     const diagram = document.getElementById('random_diagram');
     const isDarkTheme = (localStorage.getItem('theme') == 'dark');
 
-    const figures = ['cube', 'animal', 'pyramid', 'cup']
+    const figures = ['cube', 'animal', 'pyramid', 'cup', 'hexagon']
     const choice = figures[Math.floor(Math.random() * figures.length)]
     const src = 'https://johnon.land/randomdiagrams/' + choice + ".svg"
 

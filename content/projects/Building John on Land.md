@@ -1,7 +1,9 @@
 ---
 title: Building John on Land
 ---
-In the past few years I've tried various different methods of organizing my work and thoughts. Bullet journals, e-ink tablets hooked up to cloud storage, &c. [vimwiki](https://github.com/vimwiki/vimwiki) was great. It encouraged wiki-style webs of links, supported Markdown syntax, exported to HTML, and (most importantly) integrated well into my laptop's environment; but terminal displays don't allow the freedom of images, LaTeX renderings, embeddings, &c. I shall be free. 
+In the past few years I've tried various different methods of organizing my work and thoughts. Bullet journals, e-ink tablets hooked up to cloud storage, &c. The motivating method for this project was [Zettelkasten](https://en.wikipedia.org/wiki/Zettelkasten), which has likely seeped into the world's conception of knowledge management via the hypertextual behemoth [Wikipedia](https://en.wikipedia.org/wiki/Main_Page). 
+
+<img src="https://upload.wikimedia.org/wikipedia/commons/thumb/3/33/Zettelkasten_%28514941699%29.jpg/2880px-Zettelkasten_%28514941699%29.jpg" width="500" />
 
 ## Criteria of the ideal personal knowledge system
 1. Standardized syntax and format in entries
@@ -10,6 +12,7 @@ In the past few years I've tried various different methods of organizing my work
 4. Easily exportable to web
 5. Freedom in design
 
-Up to now, the best system I've found for this is [Quartz](https://quartz.jzhao.xyz/) which is designed for integration with personal knowledge systems using [Obsidian](https://obsidian.md/) or other [Zettelkasten](https://zettelkasten.de/overview/)-supporting markdown systems. And so, the page you are viewing now is generated using [Quartz](https://quartz.jzhao.xyz/). 
+[vimwiki](https://github.com/vimwiki/vimwiki) was got the closest to this. It encouraged wiki-style webs of links, supported Markdown syntax, exported to HTML, and (most importantly) integrated well into my laptop's environment; but on a terminal display I'm not free to inject $\LaTeX$ renderings or pretty much anything that isn't enriched UTF-8 text. I shall be free. 
 
-
+## Building with Quartz
+[Quartz](https://quartz.jzhao.xyz/) is a static site generator that has checked all these boxes thus far, mainly because its compatible with the Obsidian markdown system.

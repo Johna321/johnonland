@@ -7,7 +7,7 @@ let mousePosition = { x: 0, y: 0 };
 // Variables for physics
 let isPhysicsEnabled = false; // Enables physics after mouseup
 let velocity = 0; // Vertical velocity
-let gravity = 0.5; // Gravity constant
+let gravity = 0.75; // Gravity constant
 let animationFrame;
 
 fig.addEventListener('dragstart', (e) => {
