@@ -1,4 +1,4 @@
-const fig = document.getElementById('random_diagram');
+const fig = document.getElementById('random_diagram')!;
 
 let isDown = false;
 let offset = [0, 0];
@@ -8,7 +8,7 @@ let mousePosition = { x: 0, y: 0 };
 let isPhysicsEnabled = false; // Enables physics after mouseup
 let velocity = 0; // Vertical velocity
 let gravity = 0.75; // Gravity constant
-let animationFrame;
+let animationFrame : number;
 
 fig.addEventListener('dragstart', (e) => {
     e.preventDefault()
@@ -19,7 +19,7 @@ fig.addEventListener(
   'mousedown',
   (e) => {
     console.log('MOUSE DOWN');
-    fig.style.zIndex = 9999;
+    fig.style.zIndex = '9999';
     isDown = true;
     isPhysicsEnabled = false; // Disable physics while dragging
     velocity = 0; // Reset velocity

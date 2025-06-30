@@ -1,7 +1,7 @@
 
 
 document.addEventListener("nav", () => {
-    const diagram = document.getElementById('random_diagram');
+    const diagram = document.getElementById('random_diagram') as HTMLImageElement;
     const isDarkTheme = (localStorage.getItem('theme') == 'dark');
 
     const figures = ['cube', 'animal', 'pyramid', 'cup', 'hexagon']
