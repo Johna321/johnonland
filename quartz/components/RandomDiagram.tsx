@@ -9,8 +9,8 @@ const RandomDiagram: QuartzComponent = ({ displayClass }: QuartzComponentProps) 
         <div id="diagram-container" class={classNames(displayClass)} style="margin-left:auto;">
             <img 
                 id="random_diagram" 
-                src='https://johnon.land/randomdiagrams/cube_light.svg'
-                alt="cube"
+                src='https://johnon.land/randomdiagrams/cup.svg'
+                alt="cup"
                 height="60px"
                 width="60px"
                 style="margin-top: 0; margin-bottom: 0"
