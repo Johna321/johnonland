@@ -6,7 +6,7 @@ document.addEventListener("nav", () => {
 
     const figures = ['cube', 'animal', 'pyramid', 'cup', 'hexagon']
     const choice = figures[Math.floor(Math.random() * figures.length)]
-    const src = 'https://johnon.land/randomdiagrams/' + choice + ".svg"
+    const src = 'https://johnon.land/static/' + choice + ".svg"
 
     diagram.src = src;
 
