@@ -28,8 +28,8 @@ export const defaultContentPageLayout: PageLayout = {
     Component.TagList(),
   ],
   left: [
-    Component.Search(),
-    Component.Explorer(),
+    Component.DesktopOnly(Component.Search()),
+    Component.DesktopOnly(Component.Explorer()),
   ],
   right: [
     Component.DesktopOnly(Component.TableOfContents()),
@@ -45,7 +45,8 @@ export const defaultListPageLayout: PageLayout = {
     Component.ContentMeta()
   ],
   left: [
-    Component.Explorer(),
+    Component.DesktopOnly(Component.Search()),
+    Component.DesktopOnly(Component.Explorer()),
   ],
   right: [],
 }

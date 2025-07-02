@@ -1,0 +1,103 @@
+name: Deploy to S3 (Simple)
+
+on:
+  push:
+    branches: [v4]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Cache dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build Quartz site
+        run: npx quartz build
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - name: Deploy to S3
+        run: |
+          # Upload all files from the public directory to S3 with proper content types
+          aws s3 sync public/ s3://${{ secrets.S3_BUCKET_NAME }} \
+            --delete \
+            --cache-control "no-cache, must-revalidate" \
+            --exclude "*.html" \
+            --exclude "*.css" \
+            --exclude "*.js" \
+            --exclude "*.xml" \
+            --exclude "*.txt" \
+            --exclude "*.json"
+          
+          # Upload HTML files with proper content type
+          aws s3 sync public/ s3://${{ secrets.S3_BUCKET_NAME }} \
+            --delete \
+            --cache-control "no-cache, must-revalidate" \
+            --include "*.html" \
+            --content-type "text/html"
+          
+          # Upload CSS files with proper content type
+          aws s3 sync public/ s3://${{ secrets.S3_BUCKET_NAME }} \
+            --delete \
+            --cache-control "no-cache, must-revalidate" \
+            --include "*.css" \
+            --content-type "text/css"
+          
+          # Upload JS files with proper content type
+          aws s3 sync public/ s3://${{ secrets.S3_BUCKET_NAME }} \
+            --delete \
+            --cache-control "no-cache, must-revalidate" \
+            --include "*.js" \
+            --content-type "application/javascript"
+          
+          # Upload XML files with proper content type
+          aws s3 sync public/ s3://${{ secrets.S3_BUCKET_NAME }} \
+            --delete \
+            --cache-control "no-cache, must-revalidate" \
+            --include "*.xml" \
+            --content-type "application/xml"
+          
+          # Upload JSON files with proper content type
+          aws s3 sync public/ s3://${{ secrets.S3_BUCKET_NAME }} \
+            --delete \
+            --cache-control "no-cache, must-revalidate" \
+            --include "*.json" \
+            --content-type "application/json"
+          
+          # Upload text files with proper content type
+          aws s3 sync public/ s3://${{ secrets.S3_BUCKET_NAME }} \
+            --delete \
+            --cache-control "no-cache, must-revalidate" \
+            --include "*.txt" \
+            --content-type "text/plain"
+
+      - name: Invalidate CloudFront cache
+        run: |
+          aws cloudfront create-invalidation \
+            --distribution-id ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }} \
+            --paths "/*" 

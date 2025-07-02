@@ -14,4 +14,10 @@ hide_metadata: true
 
 [cat-v.org](https://cat-v.org/)
 
+[are.na](https://are.na)
+
+[scottaaronson.blog](https://scottaaronson.blog/)
+
+[aarnphm.xyz](https://aarnphm.xyz/)
+
 ... and many more
