@@ -1,4 +1,7 @@
 
+<img src="https://i0.wp.com/batesoninstitute.org/wp-content/uploads/2018/11/Gregory-Bateson-B-Schwartz2.jpg?resize=1080%2C643&ssl=1" width="500" />
+
+
 *March 1952, New York, NY*
 
 > **Bateson**: "Of the three types of convulsion, laughter is the one for which there is the clearest ideational content. It is relatively easy to discuss what is a joke, what are the characteristics that make a joke, what is the point of a joke. The sort of analysis that I want to propose assumes that the messages in the first phase of telling the joke are such that while the informational content is, so to speak, on the surface, the other content types in various forms are implicit in the background. When the point of a joke is reached, suddenly this background material is brought into attention and a paradox, or something like it is touched off. A circuit of contradictory notions is completed."
