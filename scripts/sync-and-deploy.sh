@@ -34,6 +34,9 @@ echo "Content synced."
 # Stage, commit, and push
 echo "Committing and pushing..."
 git add -A
+# Force-add content directories (they're in .gitignore for symlink support)
+git add --force src/content/notes src/content/writings src/content/projects
+git add --force public/assets/notes
 git commit -m "Update content" || echo "No changes to commit"
 git push origin main
 
