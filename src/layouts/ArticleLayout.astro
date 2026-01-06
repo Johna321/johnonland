@@ -1,0 +1,178 @@
+---
+import BaseLayout from './BaseLayout.astro';
+import TableOfContents from '../components/TableOfContents.astro';
+import Explorer from '../components/Explorer.astro';
+import type { TocEntry } from '../components/TableOfContents.astro';
+
+interface Props {
+  title: string;
+  description?: string;
+  date?: Date;
+  tags?: string[];
+  hideTitle?: boolean;
+  hideMetadata?: boolean;
+  collection?: string;
+  slug?: string;
+  headings?: { depth: number; text: string; slug: string }[];
+  content?: string; // Raw content for reading time
+}
+
+const {
+  title,
+  description,
+  date,
+  tags = [],
+  hideTitle = false,
+  hideMetadata = false,
+  collection,
+  slug,
+  headings = [],
+  content = '',
+} = Astro.props;
+
+const formattedDate = date ? new Intl.DateTimeFormat('en-US', {
+  year: 'numeric',
+  month: 'long',
+  day: 'numeric',
+}).format(date) : null;
+
+// Calculate reading time (rough estimate: 200 words per minute)
+function calculateReadingTime(text: string): number {
+  const words = text.trim().split(/\s+/).length;
+  return Math.ceil(words / 200);
+}
+
+const readingTimeMinutes = content ? calculateReadingTime(content) : null;
+
+// Convert Astro headings format to our TocEntry format
+const tocEntries: TocEntry[] = headings.map(h => ({
+  depth: h.depth,
+  text: h.text,
+  slug: h.slug,
+}));
+---
+
+<BaseLayout title={title} description={description || title}>
+  <div class="sidebar left desktop-only" slot="sidebar-left">
+    <Explorer />
+  </div>
+
+  <div class="sidebar right desktop-only" slot="sidebar-right">
+    {tocEntries.length > 0 && <TableOfContents headings={tocEntries} />}
+    <slot name="backlinks" />
+  </div>
+
+  <article class="article" data-pagefind-body>
+    <div class="popover-hint">
+      {!hideTitle && (
+        <header class="article-header">
+          <h1>{title}</h1>
+          {!hideMetadata && (formattedDate || readingTimeMinutes || tags.length > 0) && (
+            <p class="content-meta">
+              {formattedDate && <time datetime={date?.toISOString()}>{formattedDate}</time>}
+              {readingTimeMinutes && <span class="reading-time">{readingTimeMinutes} min read</span>}
+            </p>
+          )}
+          {!hideMetadata && tags.length > 0 && (
+            <ul class="tags">
+              {tags.map((tag) => (
+                <li><a href={`/tags/${tag}/`} class="tag">#{tag}</a></li>
+              ))}
+            </ul>
+          )}
+        </header>
+      )}
+
+      <div class="article-content">
+        <slot />
+      </div>
+    </div>
+  </article>
+</BaseLayout>
+
+<style>
+  .article {
+    max-width: 100%;
+    margin-top: var(--contentTopSpacing);
+  }
+
+  .article-header {
+    margin-bottom: 2rem;
+  }
+
+  .article-header h1 {
+    color: var(--secondary);
+    margin-bottom: 0.5rem;
+    margin-top: 0;
+  }
+
+  .content-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    align-items: center;
+    color: var(--darkgray);
+    font-size: 0.9rem;
+    margin: 0;
+  }
+
+  .content-meta > *:not(:last-child)::after {
+    content: ",";
+    margin-left: 0;
+  }
+
+  .reading-time {
+    color: var(--primary);
+  }
+
+  .tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+    list-style: none;
+    padding: 0;
+    margin: 0.5rem 0 0 0;
+  }
+
+  .tag {
+    color: var(--secondary);
+    font-size: 0.85rem;
+  }
+
+  .tag:hover {
+    color: var(--tertiary);
+  }
+
+  .article-content {
+    line-height: 1.8;
+  }
+
+  /* Lobotomized owl for markdown content */
+  .article-content :global(> *:first-child) {
+    margin-top: 0;
+  }
+
+  .article-content :global(> * + *) {
+    margin-top: 1.5rem;
+  }
+
+  .article-content :global(h2) {
+    margin-top: 3rem;
+  }
+
+  .article-content :global(h3) {
+    margin-top: 2rem;
+  }
+
+  .article-content :global(img) {
+    border-radius: 4px;
+  }
+
+  .article-content :global(blockquote) {
+    margin-top: 1.5rem;
+  }
+
+  .article-content :global(pre) {
+    margin-top: 1.5rem;
+  }
+</style>

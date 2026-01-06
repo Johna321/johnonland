@@ -1,0 +1,59 @@
+---
+import type { BacklinkInfo } from '../lib/backlinks';
+
+interface Props {
+  backlinks: BacklinkInfo[];
+}
+
+const { backlinks } = Astro.props;
+---
+
+{backlinks.length > 0 && (
+  <aside class="backlinks">
+    <h3>Backlinks</h3>
+    <ul>
+      {backlinks.map((link) => (
+        <li>
+          <a href={`/${link.collection}/${link.slug}/`} class="internal">
+            {link.title}
+          </a>
+        </li>
+      ))}
+    </ul>
+  </aside>
+)}
+
+<style>
+  .backlinks {
+    margin-top: 2rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--lightgray);
+  }
+
+  .backlinks h3 {
+    font-size: 1rem;
+    color: var(--gray);
+    margin-bottom: 0.5rem;
+  }
+
+  .backlinks ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  .backlinks li {
+    margin-bottom: 0.25rem;
+  }
+
+  .backlinks a {
+    color: var(--secondary);
+    text-decoration: underline;
+    text-decoration-style: dotted;
+    text-underline-offset: 2px;
+  }
+
+  .backlinks a:hover {
+    color: var(--tertiary);
+  }
+</style>

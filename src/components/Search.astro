@@ -1,0 +1,168 @@
+---
+// Pagefind search component
+---
+
+<div id="search-container">
+  <button id="search-button" aria-label="Search" title="Search (Ctrl+K)">
+    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="11" cy="11" r="8"></circle>
+      <path d="m21 21-4.3-4.3"></path>
+    </svg>
+  </button>
+</div>
+
+<div id="search-modal" class="search-modal hidden">
+  <div class="search-modal-backdrop"></div>
+  <div class="search-modal-content">
+    <div id="search"></div>
+  </div>
+</div>
+
+<style>
+  #search-button {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0.5rem;
+    color: var(--dark);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.2s ease;
+  }
+
+  #search-button:hover {
+    color: var(--secondary);
+  }
+
+  .search-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding-top: 10vh;
+  }
+
+  .search-modal.hidden {
+    display: none;
+  }
+
+  .search-modal-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+  }
+
+  .search-modal-content {
+    position: relative;
+    background: var(--light);
+    border-radius: 8px;
+    width: 90%;
+    max-width: 600px;
+    max-height: 70vh;
+    overflow: auto;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+  }
+
+  /* Pagefind UI customization */
+  :global(.pagefind-ui) {
+    --pagefind-ui-scale: 1;
+    --pagefind-ui-primary: var(--secondary);
+    --pagefind-ui-text: var(--dark);
+    --pagefind-ui-background: var(--light);
+    --pagefind-ui-border: var(--lightgray);
+    --pagefind-ui-tag: var(--lightgray);
+    --pagefind-ui-border-width: 1px;
+    --pagefind-ui-border-radius: 4px;
+    --pagefind-ui-font: var(--bodyFont);
+  }
+
+  :global(.pagefind-ui__search-input) {
+    font-family: var(--bodyFont) !important;
+  }
+
+  :global(.pagefind-ui__result-link) {
+    color: var(--secondary) !important;
+  }
+</style>
+
+<script is:inline>
+  (function() {
+    let pagefindLoaded = false;
+
+    async function loadPagefind() {
+      if (pagefindLoaded) return;
+
+      try {
+        // Load CSS
+        const link = document.createElement('link');
+        link.rel = 'stylesheet';
+        link.href = '/pagefind/pagefind-ui.css';
+        document.head.appendChild(link);
+
+        // Load and init Pagefind
+        const pagefindModule = await import('/pagefind/pagefind-ui.js');
+        const searchContainer = document.getElementById('search');
+        if (searchContainer && !searchContainer.hasChildNodes()) {
+          new pagefindModule.PagefindUI({
+            element: '#search',
+            showImages: false,
+            showSubResults: true,
+          });
+        }
+        pagefindLoaded = true;
+      } catch (e) {
+        console.log('Pagefind not available (normal in dev mode)');
+      }
+    }
+
+    function initSearch() {
+      const modal = document.getElementById('search-modal');
+      const button = document.getElementById('search-button');
+      const backdrop = modal?.querySelector('.search-modal-backdrop');
+
+      function openSearch() {
+        loadPagefind();
+        modal?.classList.remove('hidden');
+        setTimeout(() => {
+          const input = modal?.querySelector('input');
+          input?.focus();
+        }, 100);
+      }
+
+      function closeSearch() {
+        modal?.classList.add('hidden');
+      }
+
+      button?.addEventListener('click', openSearch);
+      backdrop?.addEventListener('click', closeSearch);
+
+      // Keyboard shortcuts
+      document.addEventListener('keydown', (e) => {
+        if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+          e.preventDefault();
+          if (modal?.classList.contains('hidden')) {
+            openSearch();
+          } else {
+            closeSearch();
+          }
+        }
+        if (e.key === 'Escape') {
+          closeSearch();
+        }
+      });
+    }
+
+    // Initialize on load
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initSearch);
+    } else {
+      initSearch();
+    }
+
+    // Re-initialize on navigation
+    document.addEventListener('astro:after-swap', initSearch);
+  })();
+</script>

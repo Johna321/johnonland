@@ -1,0 +1,89 @@
+---
+import DarkMode from './DarkMode.astro';
+import RandomDiagram from './RandomDiagram';
+
+interface Props {
+  title?: string;
+}
+
+const { title = 'John on Land' } = Astro.props;
+---
+
+<header>
+  <nav>
+    <a href="/" class="site-title">{title}</a>
+    <div class="nav-right">
+      <div id="diagram-container">
+        <RandomDiagram client:load />
+      </div>
+      <DarkMode />
+    </div>
+  </nav>
+</header>
+
+<style>
+  header {
+    padding: 1rem 2rem;
+    border-bottom: 1px solid var(--lightgray);
+  }
+
+  @media (max-width: 1200px) {
+    header {
+      padding: 1rem;
+    }
+  }
+
+  nav {
+    max-width: calc(1200px + 300px);
+    margin: 0 auto;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .site-title {
+    font-family: var(--headerFont);
+    font-size: 1.3rem;
+    font-weight: 600;
+    color: var(--dark);
+    white-space: nowrap;
+    background-color: transparent;
+  }
+
+  .site-title:hover {
+    color: var(--secondary);
+  }
+
+  .nav-right {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  @media (max-width: 500px) {
+    .nav-right {
+      gap: 0.5rem;
+    }
+  }
+
+  #diagram-container {
+    display: flex;
+    align-items: center;
+  }
+
+  @media (max-width: 500px) {
+    #diagram-container {
+      display: none;
+    }
+  }
+
+  #random_diagram {
+    cursor: grab;
+  }
+
+  #random_diagram:active {
+    cursor: grabbing;
+  }
+</style>

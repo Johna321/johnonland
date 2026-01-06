@@ -1,0 +1,92 @@
+---
+import '../styles/global.css';
+import Header from '../components/Header.astro';
+import Popover from '../components/Popover.astro';
+
+interface Props {
+  title?: string;
+  description?: string;
+}
+
+const {
+  title = 'John on Land',
+  description = 'Personal website of John Aitken'
+} = Astro.props;
+
+const fullTitle = title === 'John on Land' || title === 'Home' ? 'John on Land' : `${title} | John on Land`;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content={description} />
+    <meta name="generator" content={Astro.generator} />
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+
+    <!-- KaTeX for LaTeX rendering -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" integrity="sha384-n8MVd4RsNIU0tAv4ct0nTaAbDJwPJzDEaqSD1odI+WdtXRGWt2kTvGFasHpSy3SV" crossorigin="anonymous">
+
+    <!-- Open Graph -->
+    <meta property="og:title" content={fullTitle} />
+    <meta property="og:description" content={description} />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="John on Land" />
+
+    <title>{fullTitle}</title>
+
+    <!-- Prevent flash of wrong theme -->
+    <script is:inline>
+      (function() {
+        const savedTheme = localStorage.getItem('theme');
+        const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        if (savedTheme === 'dark' || (!savedTheme && systemPrefersDark)) {
+          document.documentElement.setAttribute('data-theme', 'dark');
+        }
+      })();
+    </script>
+  </head>
+  <body>
+    <div class="page">
+      <Header title="John on Land" />
+      <div class="page-body">
+        <slot name="sidebar-left">
+          <div class="sidebar left desktop-only">
+            <slot name="explorer" />
+          </div>
+        </slot>
+
+        <div class="page-header">
+          <slot name="header" />
+        </div>
+
+        <div class="center">
+          <slot />
+        </div>
+
+        <slot name="sidebar-right">
+          <div class="sidebar right desktop-only">
+            <slot name="toc" />
+            <slot name="backlinks" />
+          </div>
+        </slot>
+
+        <footer class="page-footer">
+        </footer>
+      </div>
+    </div>
+    <Popover />
+  </body>
+</html>
+
+<style>
+  .page-footer {
+    text-align: center;
+    color: var(--gray);
+    font-size: 0.9rem;
+    padding: 2rem 0;
+  }
+</style>

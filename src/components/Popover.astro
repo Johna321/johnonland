@@ -1,0 +1,849 @@
+---
+// Popover component for hover previews of internal links
+// This component adds popover functionality to all internal links with the .internal class
+---
+
+<script>
+import { computePosition, flip, inline, shift } from '@floating-ui/dom';
+
+const parser = new DOMParser();
+let activeAnchor: HTMLAnchorElement | null = null;
+
+// Cache for fetched page content
+const pageCache = new Map<string, string>();
+
+// Cache for Wikipedia summaries
+const wikiCache = new Map<string, { title: string; extract: string; thumbnail?: string }>();
+
+// Cache for GitHub data
+const githubCache = new Map<string, {
+  type: 'repo' | 'user';
+  name: string;
+  description: string;
+  avatar?: string;
+  stars?: number;
+  language?: string;
+  followers?: number;
+}>();
+
+// Cache for PDF preview data URLs
+const pdfPreviewCache = new Map<string, string>();
+
+// PDF.js library reference
+let pdfjsLib: any = null;
+
+// Load PDF.js library dynamically
+async function loadPdfJs(): Promise<any> {
+  if (pdfjsLib) return pdfjsLib;
+
+  const lib = await import('https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.0.379/pdf.min.mjs');
+  pdfjsLib = lib;
+  pdfjsLib.GlobalWorkerOptions.workerSrc =
+    'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.0.379/pdf.worker.min.mjs';
+  return pdfjsLib;
+}
+
+// Get filename from PDF URL
+function getPdfFilename(href: string): string {
+  const decoded = decodeURIComponent(href);
+  const parts = decoded.split('/');
+  return parts[parts.length - 1] || 'document.pdf';
+}
+
+// Render PDF first page and return as image element
+async function renderPdfPreview(href: string): Promise<HTMLImageElement | null> {
+  // Check cache first - return image from cached data URL
+  if (pdfPreviewCache.has(href)) {
+    const img = document.createElement('img');
+    img.src = pdfPreviewCache.get(href)!;
+    img.className = 'pdf-canvas';
+    return img;
+  }
+
+  try {
+    const lib = await loadPdfJs();
+    const pdf = await lib.getDocument(href).promise;
+    const page = await pdf.getPage(1);
+
+    // Scale to fit nicely in popover (max width ~280px)
+    const originalViewport = page.getViewport({ scale: 1 });
+    const scale = 280 / originalViewport.width;
+    const viewport = page.getViewport({ scale });
+
+    const canvas = document.createElement('canvas');
+    canvas.width = viewport.width;
+    canvas.height = Math.min(viewport.height, 360);
+
+    const context = canvas.getContext('2d');
+    if (!context) return null;
+
+    await page.render({
+      canvasContext: context,
+      viewport: viewport,
+    }).promise;
+
+    // Convert to data URL and cache it
+    const dataUrl = canvas.toDataURL('image/png');
+    pdfPreviewCache.set(href, dataUrl);
+
+    // Return as image element
+    const img = document.createElement('img');
+    img.src = dataUrl;
+    img.className = 'pdf-canvas';
+    return img;
+  } catch (error) {
+    console.error('Failed to render PDF preview:', error);
+    return null;
+  }
+}
+
+// Check if a URL is a Wikipedia link
+function isWikipediaLink(url: string): boolean {
+  return url.includes('wikipedia.org/wiki/');
+}
+
+// Extract article title from Wikipedia URL
+function getWikipediaTitle(url: string): string | null {
+  const match = url.match(/wikipedia\.org\/wiki\/(.+?)(?:#|$|\?)/);
+  return match ? decodeURIComponent(match[1]) : null;
+}
+
+// Fetch Wikipedia summary
+async function fetchWikipediaSummary(title: string): Promise<{ title: string; extract: string; thumbnail?: string } | null> {
+  if (wikiCache.has(title)) {
+    return wikiCache.get(title)!;
+  }
+
+  try {
+    const response = await fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(title)}`);
+    if (!response.ok) return null;
+
+    const data = await response.json();
+    const result = {
+      title: data.title,
+      extract: data.extract,
+      thumbnail: data.thumbnail?.source,
+    };
+    wikiCache.set(title, result);
+    return result;
+  } catch {
+    return null;
+  }
+}
+
+// Parse GitHub URL to extract owner/repo or username
+function parseGitHubUrl(url: string): { type: 'repo' | 'user'; owner: string; repo?: string } | null {
+  const match = url.match(/github\.com\/([^\/]+)(?:\/([^\/\?#]+))?/);
+  if (!match) return null;
+
+  const owner = match[1];
+  const repo = match[2];
+
+  // Skip special GitHub pages
+  if (['features', 'enterprise', 'pricing', 'login', 'join', 'settings', 'notifications', 'pulls', 'issues', 'marketplace', 'explore', 'topics', 'trending', 'collections', 'sponsors', 'about'].includes(owner)) {
+    return null;
+  }
+
+  if (repo && !['followers', 'following', 'repositories', 'stars', 'projects', 'packages'].includes(repo)) {
+    return { type: 'repo', owner, repo };
+  }
+  return { type: 'user', owner };
+}
+
+// Fetch GitHub data
+async function fetchGitHubData(parsed: { type: 'repo' | 'user'; owner: string; repo?: string }): Promise<typeof githubCache extends Map<string, infer V> ? V : never> | null {
+  const cacheKey = parsed.type === 'repo' ? `${parsed.owner}/${parsed.repo}` : parsed.owner;
+
+  if (githubCache.has(cacheKey)) {
+    return githubCache.get(cacheKey)!;
+  }
+
+  try {
+    const apiUrl = parsed.type === 'repo'
+      ? `https://api.github.com/repos/${parsed.owner}/${parsed.repo}`
+      : `https://api.github.com/users/${parsed.owner}`;
+
+    const response = await fetch(apiUrl);
+    if (!response.ok) return null;
+
+    const data = await response.json();
+
+    const result = parsed.type === 'repo' ? {
+      type: 'repo' as const,
+      name: data.full_name,
+      description: data.description || 'No description provided',
+      avatar: data.owner?.avatar_url,
+      stars: data.stargazers_count,
+      language: data.language,
+    } : {
+      type: 'user' as const,
+      name: data.login,
+      description: data.bio || data.company || 'GitHub user',
+      avatar: data.avatar_url,
+      followers: data.followers,
+    };
+
+    githubCache.set(cacheKey, result);
+    return result;
+  } catch {
+    return null;
+  }
+}
+
+function normalizeRelativeURLs(doc: Document, baseUrl: URL) {
+  const elements = doc.querySelectorAll('[href], [src]');
+  elements.forEach((el) => {
+    const href = el.getAttribute('href');
+    const src = el.getAttribute('src');
+
+    if (href && !href.startsWith('http') && !href.startsWith('#') && !href.startsWith('data:')) {
+      try {
+        el.setAttribute('href', new URL(href, baseUrl).pathname);
+      } catch {
+        // Invalid URL, leave as-is
+      }
+    }
+    if (src && !src.startsWith('http') && !src.startsWith('data:')) {
+      try {
+        el.setAttribute('src', new URL(src, baseUrl).toString());
+      } catch {
+        // Invalid URL, leave as-is
+      }
+    }
+  });
+}
+
+async function mouseEnterHandler(
+  this: HTMLAnchorElement,
+  { clientX, clientY }: { clientX: number; clientY: number }
+) {
+  const link = (activeAnchor = this);
+
+  // Skip if marked as no popover
+  if (link.dataset.noPopover === 'true') {
+    return;
+  }
+
+  async function setPosition(popoverElement: HTMLElement) {
+    const { x, y } = await computePosition(link, popoverElement, {
+      strategy: 'fixed',
+      middleware: [inline({ x: clientX, y: clientY }), shift(), flip()],
+    });
+    Object.assign(popoverElement.style, {
+      transform: `translate(${x.toFixed()}px, ${y.toFixed()}px)`,
+    });
+  }
+
+  function showPopover(popoverElement: HTMLElement) {
+    clearActivePopover();
+    popoverElement.classList.add('active-popover');
+    setPosition(popoverElement);
+
+    if (hash !== '') {
+      const targetAnchor = `#popover-internal-${hash.slice(1)}`;
+      const heading = popoverInner?.querySelector(targetAnchor) as HTMLElement | null;
+      if (heading) {
+        popoverInner?.scroll({ top: heading.offsetTop - 12, behavior: 'instant' });
+      }
+    }
+  }
+
+  const targetUrl = new URL(link.href);
+  const hash = decodeURIComponent(targetUrl.hash);
+  targetUrl.hash = '';
+  targetUrl.search = '';
+  const popoverId = `popover-${link.pathname}`;
+  const prevPopoverElement = document.getElementById(popoverId);
+  let popoverInner: HTMLElement | null = null;
+
+  // Don't refetch if there's already a popover
+  if (prevPopoverElement) {
+    popoverInner = prevPopoverElement.querySelector('.popover-inner');
+    showPopover(prevPopoverElement);
+    return;
+  }
+
+  // Fetch the target page
+  let contents: string;
+  const cacheKey = targetUrl.pathname;
+
+  if (pageCache.has(cacheKey)) {
+    contents = pageCache.get(cacheKey)!;
+  } else {
+    try {
+      const response = await fetch(targetUrl.toString());
+      if (!response.ok) return;
+
+      const contentType = response.headers.get('Content-Type') || '';
+      if (!contentType.includes('text/html')) return;
+
+      contents = await response.text();
+      pageCache.set(cacheKey, contents);
+    } catch {
+      return;
+    }
+  }
+
+  // Parse the HTML and extract content
+  const html = parser.parseFromString(contents, 'text/html');
+  normalizeRelativeURLs(html, targetUrl);
+
+  // Prepend all IDs inside popovers to prevent duplicates
+  html.querySelectorAll('[id]').forEach((el) => {
+    el.id = `popover-internal-${el.id}`;
+  });
+
+  const elts = [...html.getElementsByClassName('popover-hint')];
+  if (elts.length === 0) return;
+
+  // Create popover element
+  const popoverElement = document.createElement('div');
+  popoverElement.id = popoverId;
+  popoverElement.classList.add('popover');
+
+  popoverInner = document.createElement('div');
+  popoverInner.classList.add('popover-inner');
+  popoverElement.appendChild(popoverInner);
+
+  elts.forEach((elt) => popoverInner?.appendChild(elt.cloneNode(true)));
+
+  // Check if popover was already created by another hover
+  if (document.getElementById(popoverId)) {
+    return;
+  }
+
+  document.body.appendChild(popoverElement);
+
+  // Make sure this is still the active anchor
+  if (activeAnchor !== this) {
+    return;
+  }
+
+  showPopover(popoverElement);
+}
+
+function clearActivePopover() {
+  activeAnchor = null;
+  const allPopoverElements = document.querySelectorAll('.popover');
+  allPopoverElements.forEach((popoverElement) =>
+    popoverElement.classList.remove('active-popover')
+  );
+}
+
+// Handler for Wikipedia links
+async function wikipediaMouseEnterHandler(
+  this: HTMLAnchorElement,
+  { clientX, clientY }: { clientX: number; clientY: number }
+) {
+  const link = (activeAnchor = this);
+
+  if (link.dataset.noPopover === 'true') {
+    return;
+  }
+
+  async function setPosition(popoverElement: HTMLElement) {
+    const { x, y } = await computePosition(link, popoverElement, {
+      strategy: 'fixed',
+      middleware: [inline({ x: clientX, y: clientY }), shift(), flip()],
+    });
+    Object.assign(popoverElement.style, {
+      transform: `translate(${x.toFixed()}px, ${y.toFixed()}px)`,
+    });
+  }
+
+  function showPopover(popoverElement: HTMLElement) {
+    clearActivePopover();
+    popoverElement.classList.add('active-popover');
+    setPosition(popoverElement);
+  }
+
+  const wikiTitle = getWikipediaTitle(link.href);
+  if (!wikiTitle) return;
+
+  const popoverId = `popover-wiki-${wikiTitle.replace(/[^a-zA-Z0-9]/g, '-')}`;
+  const prevPopoverElement = document.getElementById(popoverId);
+
+  // Don't refetch if there's already a popover
+  if (prevPopoverElement) {
+    showPopover(prevPopoverElement);
+    return;
+  }
+
+  // Fetch Wikipedia summary
+  const summary = await fetchWikipediaSummary(wikiTitle);
+  if (!summary) return;
+
+  // Create popover element
+  const popoverElement = document.createElement('div');
+  popoverElement.id = popoverId;
+  popoverElement.classList.add('popover', 'popover-wikipedia');
+
+  const popoverInner = document.createElement('div');
+  popoverInner.classList.add('popover-inner');
+  popoverElement.appendChild(popoverInner);
+
+  // Build content
+  let html = `<h1>${summary.title}</h1>`;
+  if (summary.thumbnail) {
+    html += `<img src="${summary.thumbnail}" alt="${summary.title}" class="wiki-thumbnail" />`;
+  }
+  html += `<p>${summary.extract}</p>`;
+  html += `<span class="wiki-attribution">From Wikipedia</span>`;
+
+  popoverInner.innerHTML = html;
+
+  // Check if popover was already created by another hover
+  if (document.getElementById(popoverId)) {
+    return;
+  }
+
+  document.body.appendChild(popoverElement);
+
+  // Make sure this is still the active anchor
+  if (activeAnchor !== this) {
+    return;
+  }
+
+  showPopover(popoverElement);
+}
+
+// Handler for GitHub links
+async function githubMouseEnterHandler(
+  this: HTMLAnchorElement,
+  { clientX, clientY }: { clientX: number; clientY: number }
+) {
+  const link = (activeAnchor = this);
+
+  if (link.dataset.noPopover === 'true') {
+    return;
+  }
+
+  async function setPosition(popoverElement: HTMLElement) {
+    const { x, y } = await computePosition(link, popoverElement, {
+      strategy: 'fixed',
+      middleware: [inline({ x: clientX, y: clientY }), shift(), flip()],
+    });
+    Object.assign(popoverElement.style, {
+      transform: `translate(${x.toFixed()}px, ${y.toFixed()}px)`,
+    });
+  }
+
+  function showPopover(popoverElement: HTMLElement) {
+    clearActivePopover();
+    popoverElement.classList.add('active-popover');
+    setPosition(popoverElement);
+  }
+
+  const parsed = parseGitHubUrl(link.href);
+  if (!parsed) return;
+
+  const popoverId = `popover-gh-${parsed.owner}${parsed.repo ? '-' + parsed.repo : ''}`.replace(/[^a-zA-Z0-9-]/g, '-');
+  const prevPopoverElement = document.getElementById(popoverId);
+
+  if (prevPopoverElement) {
+    showPopover(prevPopoverElement);
+    return;
+  }
+
+  const data = await fetchGitHubData(parsed);
+  if (!data) return;
+
+  const popoverElement = document.createElement('div');
+  popoverElement.id = popoverId;
+  popoverElement.classList.add('popover', 'popover-github');
+
+  const popoverInner = document.createElement('div');
+  popoverInner.classList.add('popover-inner');
+  popoverElement.appendChild(popoverInner);
+
+  let html = '';
+  if (data.avatar) {
+    html += `<img src="${data.avatar}" alt="${data.name}" class="gh-avatar" />`;
+  }
+  html += `<div class="gh-content">`;
+  html += `<h1>${data.name}</h1>`;
+  html += `<p>${data.description}</p>`;
+  html += `<div class="gh-meta">`;
+  if (data.type === 'repo') {
+    if (data.language) html += `<span class="gh-language">${data.language}</span>`;
+    if (data.stars !== undefined) html += `<span class="gh-stars">★ ${data.stars.toLocaleString()}</span>`;
+  } else {
+    if (data.followers !== undefined) html += `<span class="gh-followers">${data.followers.toLocaleString()} followers</span>`;
+  }
+  html += `</div></div>`;
+  html += `<span class="gh-attribution">From GitHub</span>`;
+
+  popoverInner.innerHTML = html;
+
+  if (document.getElementById(popoverId)) {
+    return;
+  }
+
+  document.body.appendChild(popoverElement);
+
+  if (activeAnchor !== this) {
+    return;
+  }
+
+  showPopover(popoverElement);
+}
+
+// Handler for PDF links
+async function pdfMouseEnterHandler(
+  this: HTMLAnchorElement,
+  { clientX, clientY }: { clientX: number; clientY: number }
+) {
+  const link = (activeAnchor = this);
+
+  if (link.dataset.noPopover === 'true') {
+    return;
+  }
+
+  async function setPosition(popoverElement: HTMLElement) {
+    const { x, y } = await computePosition(link, popoverElement, {
+      strategy: 'fixed',
+      middleware: [inline({ x: clientX, y: clientY }), shift(), flip()],
+    });
+    Object.assign(popoverElement.style, {
+      transform: `translate(${x.toFixed()}px, ${y.toFixed()}px)`,
+    });
+  }
+
+  function showPopover(popoverElement: HTMLElement) {
+    clearActivePopover();
+    popoverElement.classList.add('active-popover');
+    setPosition(popoverElement);
+  }
+
+  const href = link.href;
+  const popoverId = `popover-pdf-${href.replace(/[^a-zA-Z0-9]/g, '-')}`;
+  const prevPopoverElement = document.getElementById(popoverId);
+
+  if (prevPopoverElement) {
+    showPopover(prevPopoverElement);
+    return;
+  }
+
+  const filename = getPdfFilename(href);
+
+  // Create popover with loading state
+  const popoverElement = document.createElement('div');
+  popoverElement.id = popoverId;
+  popoverElement.classList.add('popover', 'popover-pdf');
+
+  const popoverInner = document.createElement('div');
+  popoverInner.classList.add('popover-inner');
+  popoverElement.appendChild(popoverInner);
+
+  // Show loading state first
+  popoverInner.innerHTML = `
+    <div class="pdf-preview">
+      <div class="pdf-loading">Loading preview...</div>
+      <div class="pdf-filename">${filename}</div>
+    </div>
+  `;
+
+  if (document.getElementById(popoverId)) {
+    return;
+  }
+
+  document.body.appendChild(popoverElement);
+
+  if (activeAnchor !== this) {
+    return;
+  }
+
+  showPopover(popoverElement);
+
+  // Now render the actual PDF preview
+  const canvas = await renderPdfPreview(href);
+
+  // Check if popover still exists in DOM (user might have moused away)
+  const stillExists = document.getElementById(popoverId);
+  if (!stillExists) {
+    return;
+  }
+
+  if (canvas) {
+    popoverInner.innerHTML = '';
+    const previewDiv = document.createElement('div');
+    previewDiv.className = 'pdf-preview';
+    previewDiv.appendChild(canvas);
+
+    const filenameSpan = document.createElement('div');
+    filenameSpan.className = 'pdf-filename';
+    filenameSpan.textContent = filename;
+    previewDiv.appendChild(filenameSpan);
+
+    popoverInner.appendChild(previewDiv);
+  } else {
+    // Fallback if PDF rendering fails
+    popoverInner.innerHTML = `
+      <div class="pdf-preview">
+        <svg class="pdf-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+          <polyline points="14 2 14 8 20 8"/>
+          <text x="7" y="17" font-size="6" font-weight="bold" fill="currentColor" stroke="none">PDF</text>
+        </svg>
+        <div class="pdf-filename">${filename}</div>
+      </div>
+    `;
+  }
+
+  // Reposition after content change
+  setPosition(popoverElement);
+}
+
+function setupPopovers() {
+  // Find all internal links (links that point to the same origin)
+  const internalLinks = document.querySelectorAll('a.internal, a[href^="/"]') as NodeListOf<HTMLAnchorElement>;
+
+  for (const link of internalLinks) {
+    // Skip external links, anchors, and special links
+    const href = link.getAttribute('href');
+    if (!href || href.startsWith('#') || href.startsWith('http') || href.startsWith('mailto:')) {
+      continue;
+    }
+
+    // Add internal class if not present
+    if (!link.classList.contains('internal')) {
+      link.classList.add('internal');
+    }
+
+    link.addEventListener('mouseenter', mouseEnterHandler);
+    link.addEventListener('mouseleave', clearActivePopover);
+  }
+
+  // Find all Wikipedia links
+  const wikiLinks = document.querySelectorAll('a[href*="wikipedia.org/wiki/"]') as NodeListOf<HTMLAnchorElement>;
+
+  for (const link of wikiLinks) {
+    if (link.dataset.noPopover === 'true') continue;
+
+    link.addEventListener('mouseenter', wikipediaMouseEnterHandler);
+    link.addEventListener('mouseleave', clearActivePopover);
+  }
+
+  // Find all GitHub links
+  const githubLinks = document.querySelectorAll('a[href*="github.com/"]') as NodeListOf<HTMLAnchorElement>;
+
+  for (const link of githubLinks) {
+    if (link.dataset.noPopover === 'true') continue;
+    if (!parseGitHubUrl(link.href)) continue; // Skip non-repo/user pages
+
+    link.addEventListener('mouseenter', githubMouseEnterHandler);
+    link.addEventListener('mouseleave', clearActivePopover);
+  }
+
+  // Find all PDF links
+  const pdfLinks = document.querySelectorAll('a[href$=".pdf"], a[href$=".PDF"]') as NodeListOf<HTMLAnchorElement>;
+
+  for (const link of pdfLinks) {
+    if (link.dataset.noPopover === 'true') continue;
+
+    link.addEventListener('mouseenter', pdfMouseEnterHandler);
+    link.addEventListener('mouseleave', clearActivePopover);
+  }
+}
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', setupPopovers);
+
+// Also initialize immediately if DOM is already ready
+if (document.readyState !== 'loading') {
+  setupPopovers();
+}
+</script>
+
+<style is:global>
+  @keyframes dropin {
+    0% {
+      opacity: 0;
+      visibility: hidden;
+    }
+    1% {
+      opacity: 0;
+    }
+    100% {
+      opacity: 1;
+      visibility: visible;
+    }
+  }
+
+  .popover {
+    z-index: 999;
+    position: fixed;
+    overflow: visible;
+    padding: 1rem;
+    left: 0;
+    top: 0;
+    will-change: transform;
+    visibility: hidden;
+    opacity: 0;
+    transition: opacity 0.3s ease, visibility 0.3s ease;
+  }
+
+  .popover > .popover-inner {
+    position: relative;
+    width: 30rem;
+    max-width: calc(100vw - 4rem);
+    max-height: 20rem;
+    padding: 1rem;
+    font-weight: initial;
+    font-style: initial;
+    line-height: normal;
+    font-size: initial;
+    font-family: var(--bodyFont);
+    border: 1px solid var(--lightgray);
+    background-color: var(--light);
+    border-radius: 5px;
+    box-shadow: 6px 6px 36px 0 rgba(0, 0, 0, 0.25);
+    overflow: auto;
+    overscroll-behavior: contain;
+    white-space: normal;
+    user-select: none;
+    cursor: default;
+  }
+
+  .popover h1 {
+    font-size: 1.5rem;
+  }
+
+  .active-popover,
+  .popover:hover {
+    animation: dropin 0.3s ease;
+    animation-fill-mode: forwards;
+    animation-delay: 0.2s;
+  }
+
+  @media (max-width: 800px) {
+    .popover {
+      display: none !important;
+    }
+  }
+
+  /* Wikipedia popover styles */
+  .popover-wikipedia .wiki-thumbnail {
+    float: right;
+    max-width: 120px;
+    max-height: 120px;
+    margin: 0 0 0.5rem 0.75rem;
+    border-radius: 4px;
+    object-fit: cover;
+  }
+
+  .popover-wikipedia p {
+    margin: 0.5rem 0;
+    font-size: 0.95rem;
+    line-height: 1.5;
+  }
+
+  .popover-wikipedia .wiki-attribution {
+    display: block;
+    margin-top: 0.75rem;
+    font-size: 0.8rem;
+    color: var(--primary);
+    font-style: italic;
+    clear: both;
+  }
+
+  /* GitHub popover styles */
+  .popover-github .popover-inner {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 1rem;
+  }
+
+  .popover-github .gh-avatar {
+    width: 48px;
+    height: 48px;
+    border-radius: 6px;
+    object-fit: cover;
+    margin-right: 1rem;
+  }
+
+  .popover-github .gh-content {
+    flex: 1;
+    min-width: 200px;
+  }
+
+  .popover-github h1 {
+    font-size: 1.1rem;
+    margin: 0 0 0.25rem 0;
+  }
+
+  .popover-github p {
+    margin: 0 0 0.5rem 0;
+    font-size: 0.9rem;
+    line-height: 1.4;
+    color: var(--primary);
+  }
+
+  .popover-github .gh-meta {
+    display: flex;
+    gap: 0.75rem;
+    font-size: 0.85rem;
+    color: var(--primary);
+  }
+
+  .popover-github .gh-stars {
+    color: var(--secondary);
+  }
+
+  .popover-github .gh-language {
+    font-weight: 500;
+  }
+
+  .popover-github .gh-attribution {
+    width: 100%;
+    display: block;
+    margin-top: 0.5rem;
+    font-size: 0.8rem;
+    color: var(--primary);
+    font-style: italic;
+  }
+
+  /* PDF popover styles */
+  .popover-pdf .popover-inner {
+    width: auto;
+    min-width: 200px;
+    max-width: 320px;
+    padding: 0;
+  }
+
+  .popover-pdf .pdf-preview {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .popover-pdf .pdf-canvas {
+    max-width: 100%;
+    border: 1px solid var(--lightgray);
+    border-radius: 4px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  }
+
+  .popover-pdf .pdf-icon {
+    width: 64px;
+    height: 64px;
+    color: #dc2626;
+  }
+
+  .popover-pdf .pdf-filename {
+    font-size: 0.85rem;
+    color: var(--gray);
+    text-align: center;
+    word-break: break-word;
+    max-width: 100%;
+  }
+
+  .popover-pdf .pdf-loading {
+    padding: 2rem;
+    color: var(--gray);
+    font-size: 0.9rem;
+  }
+</style>

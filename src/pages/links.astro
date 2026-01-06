@@ -1,0 +1,52 @@
+---
+import ArticleLayout from '../layouts/ArticleLayout.astro';
+import { promises as fs } from 'node:fs';
+import path from 'node:path';
+
+// Read links.md directly since it's not in a collection
+const linksPath = path.join(process.cwd(), '..', 'content', 'links.md');
+let content = '';
+let title = 'Links';
+
+try {
+  const fileContent = await fs.readFile(linksPath, 'utf-8');
+  // Parse frontmatter
+  const frontmatterMatch = fileContent.match(/^---\n([\s\S]*?)\n---\n([\s\S]*)$/);
+  if (frontmatterMatch) {
+    const frontmatter = frontmatterMatch[1];
+    content = frontmatterMatch[2];
+    const titleMatch = frontmatter.match(/title:\s*(.+)/);
+    if (titleMatch) title = titleMatch[1].trim();
+  } else {
+    content = fileContent;
+  }
+} catch (e) {
+  content = 'Links page not found.';
+}
+
+// Convert markdown links to HTML (simple conversion)
+const htmlContent = content
+  .split('\n')
+  .map(line => {
+    const linkMatch = line.match(/\[([^\]]+)\]\(([^)]+)\)/);
+    if (linkMatch) {
+      return `<p><a href="${linkMatch[2]}" target="_blank" rel="noopener">${linkMatch[1]}</a></p>`;
+    }
+    return line ? `<p>${line}</p>` : '';
+  })
+  .join('\n');
+---
+
+<ArticleLayout title={title} headings={[]}>
+  <div class="links-content" set:html={htmlContent} />
+</ArticleLayout>
+
+<style>
+  .links-content p {
+    margin-bottom: 0.5rem;
+  }
+
+  .links-content a {
+    color: var(--secondary);
+  }
+</style>

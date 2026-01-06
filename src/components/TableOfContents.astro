@@ -1,0 +1,190 @@
+---
+export interface TocEntry {
+  depth: number;
+  text: string;
+  slug: string;
+}
+
+interface Props {
+  headings: TocEntry[];
+}
+
+const { headings } = Astro.props;
+
+// Only show TOC if there are headings
+if (!headings || headings.length === 0) {
+  return null;
+}
+---
+
+<div class="toc">
+  <button
+    type="button"
+    class="toc-header"
+    aria-controls="toc-content"
+    aria-expanded="true"
+  >
+    <h3>Table of Contents</h3>
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="2"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+      class="fold"
+    >
+      <polyline points="6 9 12 15 18 9"></polyline>
+    </svg>
+  </button>
+  <ul class="toc-content">
+    {headings.map((heading) => (
+      <li class={`depth-${heading.depth}`}>
+        <a href={`#${heading.slug}`} data-for={heading.slug}>
+          {heading.text}
+        </a>
+      </li>
+    ))}
+  </ul>
+</div>
+
+<style>
+  .toc {
+    display: flex;
+    flex-direction: column;
+    overflow-y: hidden;
+    min-height: 1.4rem;
+    flex: 0 0.5 auto;
+  }
+
+  .toc:has(button.toc-header.collapsed) {
+    flex: 0 1 1.4rem;
+  }
+
+  button.toc-header {
+    background-color: transparent;
+    border: none;
+    text-align: left;
+    cursor: pointer;
+    padding: 0;
+    color: var(--dark);
+    display: flex;
+    align-items: center;
+  }
+
+  button.toc-header h3 {
+    font-size: 1rem;
+    display: inline-block;
+    margin: 0;
+  }
+
+  button.toc-header .fold {
+    margin-left: 0.5rem;
+    transition: transform 0.3s ease;
+    opacity: 0.8;
+  }
+
+  button.toc-header.collapsed .fold {
+    transform: rotateZ(-90deg);
+  }
+
+  ul.toc-content {
+    list-style: none;
+    position: relative;
+    margin: 0.5rem 0;
+    padding: 0;
+    max-height: calc(100% - 2rem);
+    overscroll-behavior: contain;
+    overflow-y: auto;
+  }
+
+  ul.toc-content.collapsed {
+    display: none;
+  }
+
+  ul.toc-content > li > a {
+    color: var(--dark);
+    opacity: 0.35;
+    transition: 0.5s ease opacity, 0.3s ease color;
+    font-weight: normal;
+    display: block;
+    padding: 0.2rem 0;
+  }
+
+  ul.toc-content > li > a:hover {
+    opacity: 0.75;
+  }
+
+  ul.toc-content > li > a.in-view {
+    opacity: 0.75;
+  }
+
+  /* Depth-based indentation */
+  .depth-1 { padding-left: 0; }
+  .depth-2 { padding-left: 1rem; }
+  .depth-3 { padding-left: 2rem; }
+  .depth-4 { padding-left: 3rem; }
+  .depth-5 { padding-left: 4rem; }
+  .depth-6 { padding-left: 5rem; }
+</style>
+
+<script is:inline>
+(function() {
+  const observer = new IntersectionObserver((entries) => {
+    for (const entry of entries) {
+      const slug = entry.target.id;
+      const tocEntryElements = document.querySelectorAll(`a[data-for="${slug}"]`);
+      const windowHeight = entry.rootBounds?.height;
+      if (windowHeight && tocEntryElements.length > 0) {
+        if (entry.boundingClientRect.y < windowHeight) {
+          tocEntryElements.forEach((el) => el.classList.add("in-view"));
+        } else {
+          tocEntryElements.forEach((el) => el.classList.remove("in-view"));
+        }
+      }
+    }
+  });
+
+  function toggleToc(e) {
+    const button = e.currentTarget;
+    button.classList.toggle("collapsed");
+    button.setAttribute(
+      "aria-expanded",
+      button.getAttribute("aria-expanded") === "true" ? "false" : "true"
+    );
+    const content = button.nextElementSibling;
+    if (content) {
+      content.classList.toggle("collapsed");
+    }
+  }
+
+  function setupToc() {
+    const tocElements = document.getElementsByClassName("toc");
+    for (const toc of tocElements) {
+      const button = toc.querySelector(".toc-header");
+      if (button) {
+        button.removeEventListener("click", toggleToc);
+        button.addEventListener("click", toggleToc);
+      }
+    }
+
+    // Observe headers for scroll tracking
+    observer.disconnect();
+    const headers = document.querySelectorAll("h1[id], h2[id], h3[id], h4[id], h5[id], h6[id]");
+    headers.forEach((header) => observer.observe(header));
+  }
+
+  // Initialize on load
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', setupToc);
+  } else {
+    setupToc();
+  }
+
+  // Re-initialize on Astro navigation
+  document.addEventListener('astro:after-swap', setupToc);
+})();
+</script>

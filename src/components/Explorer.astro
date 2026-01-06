@@ -1,0 +1,484 @@
+---
+import { generateContentIndex, type ContentIndex } from '../lib/contentIndex';
+
+interface Props {
+  class?: string;
+}
+
+const { class: className } = Astro.props;
+
+// Get the current page path for highlighting
+const currentPath = Astro.url.pathname.replace(/\/$/, '').replace(/^\//, '');
+
+// Generate content index at build time
+const contentIndex = await generateContentIndex();
+---
+
+<div
+  class:list={["explorer", className]}
+  data-content-index={JSON.stringify(contentIndex)}
+  data-current-path={currentPath}
+>
+  <button type="button" class="explorer-toggle desktop-explorer" aria-expanded="true">
+    <h2>Explorer</h2>
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width="14"
+      height="14"
+      viewBox="5 8 14 8"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="2"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+      class="fold"
+    >
+      <polyline points="6 9 12 15 18 9"></polyline>
+    </svg>
+  </button>
+
+  <div class="explorer-content">
+    <ul class="explorer-ul"></ul>
+  </div>
+</div>
+
+<script>
+interface ContentDetails {
+  slug: string;
+  filePath: string;
+  title: string;
+  collection: string;
+}
+
+interface FileNode {
+  name: string;
+  slug: string;
+  title: string;
+  isFolder: boolean;
+  children: FileNode[];
+}
+
+type FolderState = {
+  path: string;
+  collapsed: boolean;
+};
+
+let explorerState: FolderState[] = [];
+let explorerInitialized = false;
+
+function buildTree(index: Record<string, ContentDetails>): FileNode {
+  const root: FileNode = { name: '', slug: '', title: '', isFolder: true, children: [] };
+
+  // Group entries by collection
+  const collections = new Map<string, ContentDetails[]>();
+
+  for (const details of Object.values(index)) {
+    if (!collections.has(details.collection)) {
+      collections.set(details.collection, []);
+    }
+    collections.get(details.collection)!.push(details);
+  }
+
+  // Sort collections alphabetically
+  const sortedCollections = Array.from(collections.keys()).sort();
+
+  for (const collection of sortedCollections) {
+    const entries = collections.get(collection)!;
+    const collectionNode: FileNode = {
+      name: collection,
+      slug: collection,
+      title: collection.charAt(0).toUpperCase() + collection.slice(1),
+      isFolder: true,
+      children: [],
+    };
+
+    // Sort entries alphabetically, folders first
+    const sortedEntries = entries.sort((a, b) => {
+      return a.title.localeCompare(b.title, undefined, { numeric: true, sensitivity: 'base' });
+    });
+
+    for (const entry of sortedEntries) {
+      // Skip index entries
+      if (entry.slug.endsWith('/index') || entry.slug === `${collection}/index`) {
+        continue;
+      }
+
+      const slugParts = entry.slug.split('/');
+      let currentNode = collectionNode;
+
+      // Build nested structure for nested slugs
+      for (let i = 1; i < slugParts.length; i++) {
+        const part = slugParts[i];
+        const isLast = i === slugParts.length - 1;
+        const partialSlug = slugParts.slice(0, i + 1).join('/');
+
+        if (isLast) {
+          // This is the file
+          currentNode.children.push({
+            name: part,
+            slug: entry.slug,
+            title: entry.title,
+            isFolder: false,
+            children: [],
+          });
+        } else {
+          // This is a folder
+          let folderNode = currentNode.children.find(c => c.name === part && c.isFolder);
+          if (!folderNode) {
+            folderNode = {
+              name: part,
+              slug: partialSlug,
+              title: part.charAt(0).toUpperCase() + part.slice(1).replace(/-/g, ' '),
+              isFolder: true,
+              children: [],
+            };
+            currentNode.children.push(folderNode);
+          }
+          currentNode = folderNode;
+        }
+      }
+    }
+
+    // Sort children: folders first, then alphabetically
+    sortChildren(collectionNode);
+    root.children.push(collectionNode);
+  }
+
+  return root;
+}
+
+function sortChildren(node: FileNode) {
+  node.children.sort((a, b) => {
+    if (a.isFolder && !b.isFolder) return -1;
+    if (!a.isFolder && b.isFolder) return 1;
+    return a.title.localeCompare(b.title, undefined, { numeric: true, sensitivity: 'base' });
+  });
+
+  for (const child of node.children) {
+    if (child.isFolder) {
+      sortChildren(child);
+    }
+  }
+}
+
+function createFileElement(node: FileNode, currentPath: string): HTMLLIElement {
+  const li = document.createElement('li');
+  const a = document.createElement('a');
+  a.href = `/${node.slug}/`;
+  a.style.backgroundColor = 'transparent';
+  a.textContent = node.title;
+  a.dataset.for = node.slug;
+
+  if (currentPath === node.slug) {
+    a.classList.add('active');
+  }
+
+  li.appendChild(a);
+  return li;
+}
+
+function createFolderElement(node: FileNode, currentPath: string): HTMLLIElement {
+  const li = document.createElement('li');
+
+  // Folder container
+  const folderContainer = document.createElement('div');
+  folderContainer.className = 'folder-container';
+  folderContainer.dataset.folderpath = node.slug;
+
+  // Fold icon
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  svg.setAttribute('width', '12');
+  svg.setAttribute('height', '12');
+  svg.setAttribute('viewBox', '5 8 14 8');
+  svg.setAttribute('fill', 'none');
+  svg.setAttribute('stroke', 'currentColor');
+  svg.setAttribute('stroke-width', '2');
+  svg.setAttribute('stroke-linecap', 'round');
+  svg.setAttribute('stroke-linejoin', 'round');
+  svg.classList.add('folder-icon');
+
+  const polyline = document.createElementNS('http://www.w3.org/2000/svg', 'polyline');
+  polyline.setAttribute('points', '6 9 12 15 18 9');
+  svg.appendChild(polyline);
+
+  // Title link
+  const titleDiv = document.createElement('div');
+  const a = document.createElement('a');
+  a.href = `/${node.slug}/`;
+  a.style.backgroundColor = 'transparent';
+  a.className = 'folder-title';
+  a.textContent = node.title;
+  a.dataset.for = node.slug;
+  titleDiv.appendChild(a);
+
+  folderContainer.appendChild(svg);
+  folderContainer.appendChild(titleDiv);
+
+  // Folder outer (collapsible content)
+  const folderOuter = document.createElement('div');
+  folderOuter.className = 'folder-outer';
+
+  // Check saved state
+  const savedState = explorerState.find(s => s.path === node.slug);
+  const isCollapsed = savedState ? savedState.collapsed : true;
+  const folderIsPrefixOfCurrentPath = currentPath.startsWith(node.slug);
+
+  if (!isCollapsed || folderIsPrefixOfCurrentPath) {
+    folderOuter.classList.add('open');
+  }
+
+  // Children list
+  const ul = document.createElement('ul');
+  ul.className = 'content';
+
+  for (const child of node.children) {
+    const childElement = child.isFolder
+      ? createFolderElement(child, currentPath)
+      : createFileElement(child, currentPath);
+    ul.appendChild(childElement);
+  }
+
+  folderOuter.appendChild(ul);
+
+  li.appendChild(folderContainer);
+  li.appendChild(folderOuter);
+
+  return li;
+}
+
+function toggleFolder(evt: MouseEvent) {
+  evt.stopPropagation();
+  const target = evt.target as HTMLElement;
+  if (!target) return;
+
+  const isSvg = target.nodeName === 'svg' || target.nodeName === 'polyline';
+
+  const folderContainer = isSvg
+    ? target.closest('.folder-container')
+    : target.closest('.folder-container');
+
+  if (!folderContainer) return;
+
+  const folderOuter = folderContainer.nextElementSibling as HTMLElement;
+  if (!folderOuter) return;
+
+  folderOuter.classList.toggle('open');
+
+  const isCollapsed = !folderOuter.classList.contains('open');
+  const path = (folderContainer as HTMLElement).dataset.folderpath;
+
+  const existingState = explorerState.find(s => s.path === path);
+  if (existingState) {
+    existingState.collapsed = isCollapsed;
+  } else {
+    explorerState.push({ path: path!, collapsed: isCollapsed });
+  }
+
+  localStorage.setItem('explorerState', JSON.stringify(explorerState));
+}
+
+function setupExplorer() {
+  if (explorerInitialized) return;
+
+  const explorer = document.querySelector('.explorer') as HTMLElement;
+  if (!explorer) return;
+
+  const explorerUl = explorer.querySelector('.explorer-ul');
+  if (!explorerUl || explorerUl.children.length > 0) return; // Already populated
+
+  explorerInitialized = true;
+
+  const contentIndexStr = explorer.dataset.contentIndex;
+  const currentPath = explorer.dataset.currentPath || '';
+
+  if (!contentIndexStr) return;
+
+  const contentIndex = JSON.parse(contentIndexStr) as Record<string, ContentDetails>;
+
+  // Load saved state
+  const savedState = localStorage.getItem('explorerState');
+  explorerState = savedState ? JSON.parse(savedState) : [];
+
+  // Build tree
+  const tree = buildTree(contentIndex);
+
+  // Render tree
+
+  const fragment = document.createDocumentFragment();
+  for (const child of tree.children) {
+    const element = child.isFolder
+      ? createFolderElement(child, currentPath)
+      : createFileElement(child, currentPath);
+    fragment.appendChild(element);
+  }
+
+  explorerUl.appendChild(fragment);
+
+  // Set up toggle button
+  const toggleBtn = explorer.querySelector('.explorer-toggle');
+  if (toggleBtn) {
+    toggleBtn.addEventListener('click', () => {
+      explorer.classList.toggle('collapsed');
+      const expanded = !explorer.classList.contains('collapsed');
+      toggleBtn.setAttribute('aria-expanded', String(expanded));
+    });
+  }
+
+  // Set up folder toggles
+  const folderIcons = explorer.querySelectorAll('.folder-icon');
+  for (const icon of folderIcons) {
+    icon.addEventListener('click', toggleFolder);
+  }
+
+  // Scroll to active element
+  const activeElement = explorerUl.querySelector('.active');
+  if (activeElement) {
+    activeElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+}
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', setupExplorer);
+
+// Also initialize immediately if DOM is already ready
+if (document.readyState !== 'loading') {
+  setupExplorer();
+}
+</script>
+
+<style>
+  .explorer {
+    display: flex;
+    flex-direction: column;
+    overflow-y: hidden;
+    min-height: 1.2rem;
+    flex: 0 1 auto;
+  }
+
+  .explorer.collapsed {
+    flex: 0 1 1.2rem;
+  }
+
+  .explorer.collapsed .fold {
+    transform: rotateZ(-90deg);
+  }
+
+  .explorer.collapsed .explorer-content {
+    display: none;
+  }
+
+  .fold {
+    margin-left: 0.5rem;
+    transition: transform 0.3s ease;
+    opacity: 0.8;
+  }
+
+  .explorer-toggle {
+    background-color: transparent;
+    border: none;
+    text-align: left;
+    cursor: pointer;
+    padding: 0;
+    color: var(--dark);
+    display: flex;
+    align-items: center;
+  }
+
+  .explorer-toggle h2 {
+    font-size: 1rem;
+    display: inline-block;
+    margin: 0;
+    line-height: 1;
+  }
+
+  .explorer-content {
+    list-style: none;
+    overflow: hidden;
+    overflow-y: auto;
+    margin-top: 0.5rem;
+    max-height: 60vh;
+  }
+
+  .explorer-content :global(ul) {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .explorer-content :global(li > a) {
+    color: var(--dark);
+    opacity: 0.75;
+    display: block;
+    padding: 0.1rem 0;
+    font-size: 0.9rem;
+  }
+
+  .explorer-content :global(li > a:hover) {
+    opacity: 1;
+  }
+
+  .explorer-content :global(li > a.active) {
+    opacity: 1;
+    color: var(--tertiary);
+  }
+
+  .explorer-content :global(.folder-outer) {
+    display: grid;
+    grid-template-rows: 0fr;
+    transition: grid-template-rows 0.3s ease-in-out;
+  }
+
+  .explorer-content :global(.folder-outer.open) {
+    grid-template-rows: 1fr;
+  }
+
+  .explorer-content :global(.folder-outer > ul) {
+    overflow: hidden;
+    margin-left: 6px;
+    padding-left: 0.8rem;
+    border-left: 1px solid var(--lightgray);
+  }
+
+  .explorer-content :global(.folder-container) {
+    flex-direction: row;
+    display: flex;
+    align-items: center;
+    user-select: none;
+  }
+
+  .explorer-content :global(.folder-container a.folder-title) {
+    color: var(--secondary);
+    font-family: var(--headerFont);
+    font-size: 0.95rem;
+    font-weight: 600;
+    line-height: 1.5rem;
+    display: inline-block;
+  }
+
+  .explorer-content :global(.folder-container a.folder-title:hover) {
+    color: var(--tertiary);
+  }
+
+  .explorer-content :global(.folder-icon) {
+    margin-right: 5px;
+    color: var(--secondary);
+    cursor: pointer;
+    transition: transform 0.3s ease;
+    backface-visibility: visible;
+    flex-shrink: 0;
+  }
+
+  .explorer-content :global(li:has(> .folder-outer:not(.open)) > .folder-container > svg) {
+    transform: rotate(-90deg);
+  }
+
+  .explorer-content :global(.folder-icon:hover) {
+    color: var(--tertiary);
+  }
+
+  .explorer-ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+</style>

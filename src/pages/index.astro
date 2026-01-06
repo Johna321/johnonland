@@ -1,0 +1,52 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Explorer from '../components/Explorer.astro';
+---
+
+<BaseLayout title="Home" description="Personal website of John Aitken">
+  <div class="sidebar left desktop-only" slot="sidebar-left">
+    <Explorer />
+  </div>
+
+  <article class="home popover-hint">
+    <p>
+      This is the personal website of <span class="small-caps">John Aitken</span>.
+      Currently studying Computer Science and Biochemistry at the University of Florida
+      in <a href="https://en.wikipedia.org/wiki/Gainesville,_Florida">Gainesville, FL</a>.
+    </p>
+
+    <p>
+      <span class="small-caps">John on Land</span> was originally conceived as a blog website,
+      but now it'll serve as a personal wiki made up of
+      <a href="/notes/" class="internal">notes</a>,
+      <a href="/writings/" class="internal">writings</a>, and
+      <a href="/projects/" class="internal">projects</a>.
+      I'll also try to keep a running list of <a href="/links/" class="internal">links</a>
+      to my favorite websites that have all, in some way or another, contributed to the
+      making of this one.
+    </p>
+
+    <p>
+      Here's my <a href="https://github.com/Johna321">Github</a> and
+      <a href="https://www.linkedin.com/in/j-aitken/">LinkedIn</a>.
+      You can download my <a href="/cv.pdf">CV here</a>.
+    </p>
+  </article>
+</BaseLayout>
+
+<style>
+  .home {
+    margin-top: var(--contentTopSpacing);
+  }
+
+  .page-title {
+    font-size: 2rem;
+    margin-bottom: 1.5rem;
+    color: var(--secondary);
+  }
+
+  .home p {
+    font-size: 1.1rem;
+    line-height: 1.8;
+  }
+</style>

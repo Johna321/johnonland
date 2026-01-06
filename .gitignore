@@ -1,11 +1,41 @@
+# build output
+dist/
+
+# generated types
+.astro/
+
+# dependencies
+node_modules/
+
+# docs and claude
+.claude/
+CLAUDE.md
+docs/
+
+# logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# environment variables
+.env
+.env.production
+
+# macOS-specific files
 .DS_Store
-.gitignore
-node_modules
-public
-prof
-tsconfig.tsbuildinfo
-.obsidian
-.quartz-cache
-private/
-.replit
-replit.nix
+
+# vscode folder
+.vscode/
+
+# jetbrains setting folder
+.idea/
+
+# Obsidian
+.obsidian/
+
+# Content symlinks (actual content committed by sync script)
+src/content/notes
+src/content/writings
+src/content/projects
+public/assets/notes

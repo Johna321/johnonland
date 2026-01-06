@@ -1,0 +1,55 @@
+---
+import { getCollection } from 'astro:content';
+import ArticleLayout from '../../layouts/ArticleLayout.astro';
+
+const notes = await getCollection('notes', ({ data }) => !data.draft);
+// Filter out index.md and sort by date
+const articles = notes
+  .filter(note => note.slug !== 'index')
+  .sort((a, b) => {
+    const dateA = a.data.date?.getTime() || 0;
+    const dateB = b.data.date?.getTime() || 0;
+    return dateB - dateA;
+  });
+
+// Get index.md content if it exists
+const indexEntry = notes.find(note => note.slug === 'index');
+const IndexContent = indexEntry ? (await indexEntry.render()).Content : null;
+const title = indexEntry?.data.title || 'Notes';
+---
+
+<ArticleLayout title={title} collection="notes" slug="index" headings={[]}>
+  {IndexContent && (
+    <div class="description">
+      <IndexContent />
+    </div>
+  )}
+
+  {articles.length > 0 && (
+    <ul class="article-list">
+      {articles.map((article) => (
+        <li>
+          <a href={`/notes/${article.slug}/`} class="internal">
+            {article.data.title || article.slug}
+          </a>
+        </li>
+      ))}
+    </ul>
+  )}
+</ArticleLayout>
+
+<style>
+  .description {
+    margin-bottom: 2rem;
+    color: var(--darkgray);
+  }
+
+  .article-list {
+    list-style: none;
+    padding: 0;
+  }
+
+  .article-list li {
+    margin-bottom: 0.5rem;
+  }
+</style>
