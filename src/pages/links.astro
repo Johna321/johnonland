@@ -4,7 +4,7 @@ import { promises as fs } from 'node:fs';
 import path from 'node:path';
 
 // Read links.md directly since it's not in a collection
-const linksPath = path.join(process.cwd(), '..', 'content', 'links.md');
+const linksPath = path.join(process.cwd(), 'src', 'content', 'links.md');
 let content = '';
 let title = 'Links';
 
