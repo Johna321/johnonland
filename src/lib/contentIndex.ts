@@ -10,6 +10,17 @@ export interface ContentDetails {
   collection: string;
 }
 
+// Apps registry - add new apps here
+export const apps = [
+  {
+    slug: 'harmonic-pathfinder',
+    title: 'Harmonic Pathfinder',
+    description: 'Interactive Tonnetz visualization with MCTS chord progression generation',
+  },
+] as const;
+
+export type AppEntry = typeof apps[number];
+
 export type ContentIndex = Record<string, ContentDetails>;
 
 export async function generateContentIndex(): Promise<ContentIndex> {
@@ -38,6 +49,17 @@ export async function generateContentIndex(): Promise<ContentIndex> {
   processCollection(notes, 'notes');
   processCollection(writings, 'writings');
   processCollection(projects, 'projects');
+
+  // Add apps to the index
+  for (const app of apps) {
+    const fullSlug = `apps/${app.slug}`;
+    index[fullSlug] = {
+      slug: fullSlug,
+      filePath: `apps/${app.slug}`,
+      title: app.title,
+      collection: 'apps',
+    };
+  }
 
   return index;
 }

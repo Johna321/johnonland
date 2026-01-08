@@ -1,0 +1,39 @@
+---
+import ArticleLayout from '../../layouts/ArticleLayout.astro';
+import { apps } from '../../lib/contentIndex';
+---
+
+<ArticleLayout title="Apps" collection="apps" slug="index" headings={[]}>
+  <ul class="app-list">
+    {apps.map((app) => (
+      <li>
+        <a href={`/apps/${app.slug}/`} class="internal">
+          {app.title}
+        </a>
+        <span class="description">{app.description}</span>
+      </li>
+    ))}
+  </ul>
+</ArticleLayout>
+
+<style>
+  .app-list {
+    list-style: none;
+    padding: 0;
+  }
+
+  .app-list li {
+    margin-bottom: 1rem;
+  }
+
+  .app-list a {
+    font-weight: 500;
+  }
+
+  .description {
+    display: block;
+    color: var(--darkgray);
+    font-size: 0.9rem;
+    margin-top: 0.25rem;
+  }
+</style>

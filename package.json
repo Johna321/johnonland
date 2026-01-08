@@ -13,9 +13,13 @@
     "@astrojs/mdx": "^4.3.13",
     "@astrojs/react": "^4.4.2",
     "@floating-ui/dom": "^1.7.4",
+    "@tailwindcss/postcss": "^4.1.18",
+    "@types/d3": "^7.4.3",
     "@types/react": "^19.2.7",
     "@types/react-dom": "^19.2.3",
     "astro": "^5.16.6",
+    "autoprefixer": "^10.4.23",
+    "d3": "^7.9.0",
     "pagefind": "^1.4.0",
     "react": "^19.2.3",
     "react-dom": "^19.2.3",
@@ -23,6 +27,8 @@
     "rehype-katex": "^7.0.1",
     "remark-math": "^6.0.0",
     "remark-wiki-link": "^2.0.1",
+    "tailwindcss": "^4.1.18",
+    "tone": "^15.1.22",
     "unist-util-visit": "^5.0.0"
   }
 }

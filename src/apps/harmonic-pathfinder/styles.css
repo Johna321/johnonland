@@ -1,0 +1,161 @@
+@import "tailwindcss";
+
+/* Harmonic Pathfinder Theme - Gallery aesthetic with light background */
+:root {
+  /* Color palette - light theme, gallery aesthetic */
+  --light: #111114;
+  --lightgray: #393639;
+  --gray: #646464;
+  --darkgray: #d4d4d4;
+  --dark: #ebebec;
+  --secondary: #b8ffff;
+  --tertiary: #84a59d;
+  --highlight: rgba(143, 159, 169, 0.15);
+  --textHighlight: #b3aa0288;
+}
+
+.harmonic-pathfinder-app {
+  /* Typography */
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+  letter-spacing: 0.01em;
+
+  /* Theme */
+  color-scheme: light;
+  color: var(--light);
+  background-color: var(--dark);
+
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+
+  /* Full screen */
+  width: 100%;
+  height: 100vh;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+/* Utility classes using CSS variables */
+.harmonic-pathfinder-app .text-light { color: var(--light); }
+.harmonic-pathfinder-app .text-gray { color: var(--gray); }
+.harmonic-pathfinder-app .text-darkgray { color: var(--darkgray); }
+.harmonic-pathfinder-app .bg-dark { background-color: var(--dark); }
+.harmonic-pathfinder-app .bg-highlight { background-color: var(--highlight); }
+.harmonic-pathfinder-app .bg-secondary { background-color: var(--secondary); }
+.harmonic-pathfinder-app .bg-tertiary { background-color: var(--tertiary); }
+
+/* Custom scrollbar */
+.harmonic-pathfinder-app ::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+.harmonic-pathfinder-app ::-webkit-scrollbar-track {
+  background: transparent;
+}
+.harmonic-pathfinder-app ::-webkit-scrollbar-thumb {
+  background: var(--darkgray);
+  border-radius: 2px;
+}
+.harmonic-pathfinder-app ::-webkit-scrollbar-thumb:hover {
+  background: var(--gray);
+}
+
+/* Range input styling */
+.harmonic-pathfinder-app input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+  cursor: pointer;
+  height: 20px;
+}
+.harmonic-pathfinder-app input[type="range"]::-webkit-slider-track {
+  background: var(--darkgray);
+  height: 1px;
+  border-radius: 0;
+}
+.harmonic-pathfinder-app input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--light);
+  margin-top: -4.5px;
+  border: none;
+  transition: transform 0.15s ease;
+}
+.harmonic-pathfinder-app input[type="range"]::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
+}
+.harmonic-pathfinder-app input[type="range"]::-moz-range-track {
+  background: var(--darkgray);
+  height: 1px;
+  border-radius: 0;
+}
+.harmonic-pathfinder-app input[type="range"]::-moz-range-thumb {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--light);
+  border: none;
+}
+
+/* Number inputs */
+.harmonic-pathfinder-app input[type="number"] {
+  -moz-appearance: textfield;
+}
+.harmonic-pathfinder-app input[type="number"]::-webkit-outer-spin-button,
+.harmonic-pathfinder-app input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Focus states - very subtle */
+.harmonic-pathfinder-app input:focus,
+.harmonic-pathfinder-app button:focus,
+.harmonic-pathfinder-app select:focus {
+  outline: none;
+}
+.harmonic-pathfinder-app input:focus-visible,
+.harmonic-pathfinder-app button:focus-visible,
+.harmonic-pathfinder-app select:focus-visible {
+  outline: 1px solid var(--tertiary);
+  outline-offset: 2px;
+}
+
+/* Selection */
+.harmonic-pathfinder-app ::selection {
+  background: var(--textHighlight);
+}
+
+/* Button reset for gallery style */
+.harmonic-pathfinder-app button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+}
+
+/* Gallery-style link/button hover */
+.harmonic-pathfinder-app .gallery-link {
+  position: relative;
+  display: inline-block;
+}
+.harmonic-pathfinder-app .gallery-link::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  width: 0;
+  height: 1px;
+  background: var(--light);
+  transition: width 0.2s ease;
+}
+.harmonic-pathfinder-app .gallery-link:hover::after {
+  width: 100%;
+}

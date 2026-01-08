@@ -1,0 +1,43 @@
+---
+import { HarmonicPathfinderApp } from '../../apps/harmonic-pathfinder/HarmonicPathfinderApp';
+import '../../apps/harmonic-pathfinder/styles.css';
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Interactive Tonnetz visualization with MCTS chord progression generation" />
+    <meta name="generator" content={Astro.generator} />
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+
+    <!-- Open Graph -->
+    <meta property="og:title" content="Harmonic Pathfinder | John on Land" />
+    <meta property="og:description" content="Interactive Tonnetz visualization with MCTS chord progression generation" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="John on Land" />
+
+    <title>Harmonic Pathfinder | John on Land</title>
+
+    <style>
+      /* Reset and fullscreen setup */
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      html, body {
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+      }
+    </style>
+  </head>
+  <body>
+    <HarmonicPathfinderApp client:only="react" />
+  </body>
+</html>
+
